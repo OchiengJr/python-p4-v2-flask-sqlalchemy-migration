@@ -1,25 +1,41 @@
 # server/app.py
 
+import os
 from flask import Flask
 from flask_migrate import Migrate
-
 from models import db
 
-# create a Flask application instance 
-app = Flask(__name__)
+# Function to create and configure the Flask application
+def create_app():
+    app = Flask(__name__)
 
-# configure the database connection to the local file app.db
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///app.db'
+    # Configure the database connection
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///app.db')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-# configure flag to disable modification tracking and use less memory
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    # Initialize the database
+    db.init_app(app)
 
-# create a Migrate object to manage schema modifications
-migrate = Migrate(app, db)
+    # Initialize migration management
+    Migrate(app, db)
 
-# initialize the Flask application to use the database
-db.init_app(app)
+    # Register blueprints here if the application grows
+    # from .views import main as main_blueprint
+    # app.register_blueprint(main_blueprint)
 
+    return app
 
+# Create the application instance
+app = create_app()
+
+# Set up logging
 if __name__ == '__main__':
-    app.run(port=5555, debug=True)
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logging.info('Starting the application...')
+
+    # Run the application
+    try:
+        app.run(port=5555, debug=True)
+    except Exception as e:
+        logging.error(f"Error running the application: {e}")
